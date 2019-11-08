@@ -106,7 +106,7 @@ internal interface IntrinsicGeneratorEnvironment {
 
     fun evaluateCall(function: IrFunction, args: List<LLVMValueRef>, resultLifetime: Lifetime, superClass: IrClass? = null): LLVMValueRef
 
-    fun evaluateExplicitArgs(expression: IrMemberAccessExpression): List<LLVMValueRef>
+    fun evaluateExplicitArgs(expression: IrFunctionAccessExpression): List<LLVMValueRef>
 
     fun evaluateExpression(value: IrExpression): LLVMValueRef
 }
@@ -447,8 +447,7 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
     private val kImmOne      = LLVMConstInt(int32Type,  1, 1)!!
 
     private fun FunctionGenerationContext.emitGetObjCClass(callSite: IrCall): LLVMValueRef {
-        val descriptor = callSite.descriptor.original
-        val typeArgument = callSite.getTypeArgument(descriptor.typeParameters.single())
+        val typeArgument = callSite.getTypeArgument(0)
         return getObjCClass(typeArgument!!.getClass()!!, environment.exceptionHandler)
     }
 
