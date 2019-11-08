@@ -19,6 +19,7 @@
 #if KONAN_OBJC_INTEROP
 
 #import <objc/runtime.h>
+#import <CoreFoundation/CFString.h>
 #import <Foundation/NSException.h>
 #import <Foundation/NSString.h>
 #import "Memory.h"
@@ -75,6 +76,9 @@ OBJ_GETTER(Kotlin_Interop_CreateKStringFromNSString, NSString* str) {
   KChar* rawResult = CharArrayAddressOfElementAt(result, 0);
 
   [str getCharacters:rawResult range:range];
+
+  void* immutableCopyOrSameStr = (void*)CFStringCreateCopy(nullptr, (CFStringRef)str);
+  result->obj()->meta_object()->associatedObject_ = immutableCopyOrSameStr;
 
   RETURN_OBJ(result->obj());
 }
