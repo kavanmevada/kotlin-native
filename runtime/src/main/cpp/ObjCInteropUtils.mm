@@ -70,15 +70,16 @@ OBJ_GETTER(Kotlin_Interop_CreateKStringFromNSString, NSString* str) {
     RETURN_OBJ(nullptr);
   }
 
-  size_t length = [str length];
-  NSRange range = {0, length};
+  CFStringRef immutableCopyOrSameStr = CFStringCreateCopy(nullptr, (CFStringRef)str);
+
+  auto length = CFStringGetLength(immutableCopyOrSameStr);
+  CFRange range = {0, length};
   ArrayHeader* result = AllocArrayInstance(theStringTypeInfo, length, OBJ_RESULT)->array();
   KChar* rawResult = CharArrayAddressOfElementAt(result, 0);
 
-  [str getCharacters:rawResult range:range];
+  CFStringGetCharacters(immutableCopyOrSameStr, range, rawResult);
 
-  void* immutableCopyOrSameStr = (void*)CFStringCreateCopy(nullptr, (CFStringRef)str);
-  result->obj()->meta_object()->associatedObject_ = immutableCopyOrSameStr;
+  result->obj()->meta_object()->associatedObject_ = (void*)immutableCopyOrSameStr;
 
   RETURN_OBJ(result->obj());
 }
