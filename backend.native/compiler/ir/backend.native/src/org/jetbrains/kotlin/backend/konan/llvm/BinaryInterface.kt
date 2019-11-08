@@ -12,8 +12,8 @@ import org.jetbrains.kotlin.backend.konan.descriptors.externalSymbolOrThrow
 import org.jetbrains.kotlin.backend.konan.descriptors.getAnnotationValue
 import org.jetbrains.kotlin.backend.konan.descriptors.isAbstract
 import org.jetbrains.kotlin.backend.konan.ir.allParameters
-import org.jetbrains.kotlin.backend.konan.ir.getObjCMethodInfo
-import org.jetbrains.kotlin.backend.konan.ir.isObjCClassMethod
+import org.jetbrains.kotlin.backend.konan.getObjCMethodInfo
+import org.jetbrains.kotlin.backend.konan.isObjCClassMethod
 import org.jetbrains.kotlin.backend.konan.ir.isUnit
 import org.jetbrains.kotlin.backend.konan.llvm.KonanMangler.isExported
 import org.jetbrains.kotlin.ir.declarations.*
@@ -89,7 +89,7 @@ object KonanMangler : KotlinManglerImpl() {
                         append(it.selector)
                         if (this@platformSpecificFunctionName is IrConstructor && this@platformSpecificFunctionName.isObjCConstructor) append("#Constructor")
 
-                        if ((this@platformSpecificFunctionName as? IrSimpleFunction)?.correspondingProperty != null) {
+                        if ((this@platformSpecificFunctionName as? IrSimpleFunction)?.correspondingPropertySymbol != null) {
                             append("#Accessor")
                         }
                     }

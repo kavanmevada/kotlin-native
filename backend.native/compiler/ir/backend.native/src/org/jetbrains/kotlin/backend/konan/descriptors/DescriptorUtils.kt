@@ -5,20 +5,21 @@
 
 package org.jetbrains.kotlin.backend.konan.descriptors
 
+import org.jetbrains.kotlin.backend.common.atMostOne
 import org.jetbrains.kotlin.backend.konan.*
-import org.jetbrains.kotlin.backend.konan.descriptors.resolveFakeOverride
 import org.jetbrains.kotlin.backend.konan.ir.*
 import org.jetbrains.kotlin.backend.konan.isObjCClass
 import org.jetbrains.kotlin.backend.konan.llvm.longName
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrSimpleFunctionSymbol
 import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.types.SimpleType
 
 /**
  * List of all implemented interfaces (including those which implemented by a super class)
@@ -76,6 +77,14 @@ internal fun IrSimpleFunction.resolveFakeOverride(allowAbstract: Boolean = false
 
     return realSupers.first { allowAbstract || it.modality != Modality.ABSTRACT }
 }
+
+internal fun IrSimpleFunction.overrides(superFunctionSymbol: IrSimpleFunctionSymbol): Boolean {
+    if (superFunctionSymbol in overriddenSymbols) return true
+    return overriddenSymbols.any { it.owner.overrides(superFunctionSymbol) }
+}
+
+internal fun IrFunction.overrides(superFunctionSymbol: IrSimpleFunctionSymbol) =
+        (this as? IrSimpleFunction)?.overrides(superFunctionSymbol) ?: false
 
 internal val IrFunction.isTypedIntrinsic: Boolean
     get() = annotations.hasAnnotation(KonanFqNames.typedIntrinsic)
@@ -219,14 +228,14 @@ internal tailrec fun IrDeclaration.findPackage(): IrPackageFragment {
             ?: (parent as IrDeclaration).findPackage()
 }
 
-fun IrFunctionSymbol.isComparisonFunction(map: Map<SimpleType, IrSimpleFunctionSymbol>): Boolean =
+fun IrFunctionSymbol.isComparisonFunction(map: Map<IrClassifierSymbol, IrSimpleFunctionSymbol>): Boolean =
         this in map.values
 
 val IrDeclaration.isPropertyAccessor get() =
-    this is IrSimpleFunction && this.correspondingProperty != null
+    this is IrSimpleFunction && this.correspondingPropertySymbol != null
 
 val IrDeclaration.isPropertyField get() =
-    this is IrField && this.correspondingProperty != null
+    this is IrField && this.correspondingPropertySymbol != null
 
 val IrDeclaration.isTopLevelDeclaration get() =
     parent !is IrDeclaration && !this.isPropertyAccessor && !this.isPropertyField
@@ -235,9 +244,9 @@ fun IrDeclaration.findTopLevelDeclaration(): IrDeclaration = when {
     this.isTopLevelDeclaration ->
         this
     this.isPropertyAccessor ->
-        (this as IrSimpleFunction).correspondingProperty!!.findTopLevelDeclaration()
+        (this as IrSimpleFunction).correspondingPropertySymbol!!.owner.findTopLevelDeclaration()
     this.isPropertyField ->
-        (this as IrField).correspondingProperty!!.findTopLevelDeclaration()
+        (this as IrField).correspondingPropertySymbol!!.owner.findTopLevelDeclaration()
     else ->
         (this.parent as IrDeclaration).findTopLevelDeclaration()
 }
@@ -254,6 +263,11 @@ fun IrConstructorCall.getStringValue(name: String): String {
     return (getValueArgument(parameter.index) as IrConst<String>).value
 }
 
+fun <T> IrConstructorCall.getArgumentValueOrNull(name: String): T? {
+    val parameter = symbol.owner.valueParameters.atMostOne { it.name.asString() == name }
+    return parameter?.let { getValueArgument(it.index)?.let { (it as IrConst<T>).value } }
+}
+
 fun IrFunction.externalSymbolOrThrow(): String? {
     annotations.findAnnotation(RuntimeNames.symbolNameAnnotation)?.let { return it.getAnnotationValue() }
 
@@ -265,3 +279,5 @@ fun IrFunction.externalSymbolOrThrow(): String? {
 
     throw Error("external function ${this.longName} must have @TypedIntrinsic, @SymbolName or @ObjCMethod annotation")
 }
+
+val IrFunction.isBuiltInOperator get() = origin == IrBuiltIns.BUILTIN_OPERATOR
