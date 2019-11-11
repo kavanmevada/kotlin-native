@@ -7,7 +7,9 @@ package org.jetbrains.kotlin.backend.konan
 
 import org.jetbrains.kotlin.backend.konan.descriptors.findPackage
 import org.jetbrains.kotlin.backend.konan.descriptors.getArgumentValueOrNull
+import org.jetbrains.kotlin.backend.konan.descriptors.getAnnotationValueOrNull
 import org.jetbrains.kotlin.backend.konan.descriptors.getStringValue
+import org.jetbrains.kotlin.backend.konan.descriptors.getAnnotationStringValue
 import org.jetbrains.kotlin.backend.konan.descriptors.getStringValueOrNull
 import org.jetbrains.kotlin.backend.konan.ir.*
 import org.jetbrains.kotlin.descriptors.*
@@ -128,9 +130,9 @@ private fun objCMethodInfo(annotation: AnnotationDescriptor) = ObjCMethodInfo(
 )
 
 private fun objCMethodInfo(annotation: IrConstructorCall) = ObjCMethodInfo(
-        selector = annotation.getStringValue("selector"),
-        encoding = annotation.getStringValue("encoding"),
-        isStret = annotation.getArgumentValueOrNull<Boolean>("isStret") ?: false
+        selector = annotation.getAnnotationStringValue("selector"),
+        encoding = annotation.getAnnotationStringValue("encoding"),
+        isStret = annotation.getAnnotationValueOrNull<Boolean>("isStret") ?: false
 )
 
 /**
@@ -261,7 +263,7 @@ val IrConstructor.isObjCConstructor get() = this.annotations.hasAnnotation(objCC
 // TODO-DCE-OBJC-INIT: Selector should be preserved by DCE.
 fun IrConstructor.getObjCInitMethod(): IrSimpleFunction? {
     return this.annotations.findAnnotation(objCConstructorFqName)?.let {
-        val initSelector = it.getStringValue("initSelector")
+        val initSelector = it.getAnnotationStringValue("initSelector")
         this.constructedClass.declarations.asSequence()
                 .filterIsInstance<IrSimpleFunction>()
                 .single { it.getExternalObjCMethodInfo()?.selector == initSelector }

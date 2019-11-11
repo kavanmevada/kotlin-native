@@ -9,7 +9,7 @@ import llvm.LLVMTypeRef
 import org.jetbrains.kotlin.backend.common.serialization.KotlinManglerImpl
 import org.jetbrains.kotlin.backend.konan.*
 import org.jetbrains.kotlin.backend.konan.descriptors.externalSymbolOrThrow
-import org.jetbrains.kotlin.backend.konan.descriptors.getAnnotationValue
+import org.jetbrains.kotlin.backend.konan.descriptors.getAnnotationStringValue
 import org.jetbrains.kotlin.backend.konan.descriptors.isAbstract
 import org.jetbrains.kotlin.backend.konan.ir.allParameters
 import org.jetbrains.kotlin.backend.konan.getObjCMethodInfo
@@ -110,7 +110,7 @@ object KonanMangler : KotlinManglerImpl() {
             }
 
             this.annotations.findAnnotation(RuntimeNames.exportForCppRuntime)?.let {
-                val name = it.getAnnotationValue() ?: this.name.asString()
+                val name = it.getAnnotationStringValue() ?: this.name.asString()
                 return name // no wrapping currently required
             }
 

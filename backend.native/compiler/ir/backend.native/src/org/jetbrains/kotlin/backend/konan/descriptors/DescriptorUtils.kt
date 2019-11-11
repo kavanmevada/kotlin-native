@@ -78,14 +78,6 @@ internal fun IrSimpleFunction.resolveFakeOverride(allowAbstract: Boolean = false
     return realSupers.first { allowAbstract || it.modality != Modality.ABSTRACT }
 }
 
-internal fun IrSimpleFunction.overrides(superFunctionSymbol: IrSimpleFunctionSymbol): Boolean {
-    if (superFunctionSymbol in overriddenSymbols) return true
-    return overriddenSymbols.any { it.owner.overrides(superFunctionSymbol) }
-}
-
-internal fun IrFunction.overrides(superFunctionSymbol: IrSimpleFunctionSymbol) =
-        (this as? IrSimpleFunction)?.overrides(superFunctionSymbol) ?: false
-
 internal val IrFunction.isTypedIntrinsic: Boolean
     get() = annotations.hasAnnotation(KonanFqNames.typedIntrinsic)
 
@@ -256,20 +248,20 @@ internal val IrClass.isFrozen: Boolean
             // RTTI is used for non-reference type box or Objective-C object wrapper:
             !this.defaultType.binaryTypeIsReference() || this.isObjCClass()
 
-fun IrConstructorCall.getAnnotationValue() = (getValueArgument(0) as? IrConst<String>)?.value
+fun IrConstructorCall.getAnnotationStringValue() = (getValueArgument(0) as? IrConst<String>)?.value
 
-fun IrConstructorCall.getStringValue(name: String): String {
+fun IrConstructorCall.getAnnotationStringValue(name: String): String {
     val parameter = symbol.owner.valueParameters.single { it.name.asString() == name }
     return (getValueArgument(parameter.index) as IrConst<String>).value
 }
 
-fun <T> IrConstructorCall.getArgumentValueOrNull(name: String): T? {
+fun <T> IrConstructorCall.getAnnotationValueOrNull(name: String): T? {
     val parameter = symbol.owner.valueParameters.atMostOne { it.name.asString() == name }
     return parameter?.let { getValueArgument(it.index)?.let { (it as IrConst<T>).value } }
 }
 
 fun IrFunction.externalSymbolOrThrow(): String? {
-    annotations.findAnnotation(RuntimeNames.symbolNameAnnotation)?.let { return it.getAnnotationValue() }
+    annotations.findAnnotation(RuntimeNames.symbolNameAnnotation)?.let { return it.getAnnotationStringValue() }
 
     if (annotations.hasAnnotation(KonanFqNames.objCMethod)) return null
 
