@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.backend.konan.ir.*
 import org.jetbrains.kotlin.backend.konan.ir.companionObject
 import org.jetbrains.kotlin.backend.konan.llvm.IntrinsicType
 import org.jetbrains.kotlin.backend.konan.llvm.tryGetIntrinsicType
+import org.jetbrains.kotlin.backend.konan.serialization.resolveFakeOverrideMaybeAbstract
 import org.jetbrains.kotlin.builtins.UnsignedTypes
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.IrElement
@@ -836,9 +837,8 @@ private class InteropTransformer(val context: Context, override val irFile: IrFi
         builder.at(expression)
         val function = expression.symbol.owner
 
-        // TODO: this is fragile.
-        if (function.isGetter && function.parent is IrClass
-                && function.name == symbols.interopNativePointedRawPtrGetter.owner.name) {
+        if ((function as? IrSimpleFunction)?.resolveFakeOverrideMaybeAbstract()?.symbol
+                == symbols.interopNativePointedGetRawPointer) {
 
             // Replace by the intrinsic call to be handled by code generator:
             return builder.irCall(symbols.interopNativePointedGetRawPointer).apply {
